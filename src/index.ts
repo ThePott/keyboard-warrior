@@ -6,28 +6,42 @@ process.stdin.setRawMode(true)
 
 const word = "hello"
 
+type ChalkStr = {
+    ansiText: string
+    isCorrect: boolean
+}
 type Output = {
-    ansiTextArray: string[]
+    chalkStrArray: ChalkStr[]
 
     typeCorrectly: (str: string) => void
     typeWrong: (str: string) => void
     backspace: () => void
     makeCleanOutput: () => string
+    display: () => void
+    countCorrect: () => number
 }
 const output: Output = {
-    ansiTextArray: [],
+    chalkStrArray: [],
     typeCorrectly: (str: string) => {
         const ansiText = chalk.green(str) // correct = green
-        output.ansiTextArray.push(ansiText)
+        output.chalkStrArray.push({ ansiText, isCorrect: true })
+        output.display()
     },
     typeWrong: (str: string) => {
         const ansiText = chalk.red(str) // wrong = red
-        output.ansiTextArray.push(ansiText)
+        output.chalkStrArray.push({ ansiText, isCorrect: false })
+        output.display()
     },
     backspace: () => {
-        output.ansiTextArray.pop()
+        output.chalkStrArray.pop()
+        output.display()
     },
-    makeCleanOutput: () => output.ansiTextArray.join(""),
+    makeCleanOutput: () => output.chalkStrArray.map(({ ansiText }) => ansiText).join(""),
+    display: () => {
+        console.clear() // NOTE: 매번 지우고 새로 그린다
+        console.log(output.makeCleanOutput() + chalk.gray(word.slice(output.chalkStrArray.length)))
+    },
+    countCorrect: () => output.chalkStrArray.filter(({ isCorrect }) => isCorrect).length,
 }
 
 console.clear()
@@ -35,24 +49,20 @@ console.log(chalk.gray(word))
 
 process.stdin.on("keypress", (str, key) => {
     if (key.name === "escape") process.exit()
+    console.log({ name: key.name })
     if (key.name === "backspace") {
         output.backspace()
         return
     }
 
-    const expected = word[output.ansiTextArray.length]
+    const expected = word[output.chalkStrArray.length]
     if (str === expected) {
         output.typeCorrectly(str)
     } else {
         output.typeWrong(str)
     }
 
-    console.clear() // NOTE: 매번 지우고 새로 그린다
-    console.log(output.makeCleanOutput() + chalk.gray(word.slice(output.ansiTextArray.length)))
-
-    // NOTE: 틀리면 완료 안 시켜야
-    // TODO: 그걸 어떻게 감지하지?
-    if (output.ansiTextArray.length >= word.length) {
+    if (output.countCorrect() >= word.length) {
         console.log("\nDone!")
         process.exit()
     }

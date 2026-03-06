@@ -100,6 +100,8 @@ type Output = {
     chalkStrArray: ChalkStr[]
     totalKeyStroke: number
     startTime: number | null
+    isWaitingEnter: boolean
+    score: number
 
     typeCorrectly: (str: string) => void
     typeWrong: (str: string) => void
@@ -107,13 +109,15 @@ type Output = {
     makeCleanOutput: () => string
     display: () => void
     countCorrect: () => number
-    showStatistics: () => number // NOTE: return score
+    showStatistics: () => void // NOTE: return score
     reset: () => void
 }
 const output: Output = {
     chalkStrArray: [],
     totalKeyStroke: 0,
     startTime: null,
+    isWaitingEnter: false,
+    score: 0,
 
     typeCorrectly: (str: string) => {
         const ansiText = chalk.green(str) // correct = green
@@ -149,7 +153,7 @@ const output: Output = {
         const scoreForDisplay = Math.round(score)
         console.log({ timeForDisplay, wpmForDisplay, accuracyForDisplay, scoreForDisplay })
 
-        return score
+        output.score = score
     },
     reset: () => {
         output.chalkStrArray = []
@@ -162,6 +166,10 @@ output.display()
 
 process.stdin.on("keypress", (str, key) => {
     if (key.name === "escape") process.exit()
+    if (key.name === "enter" && output.isWaitingEnter) {
+        round.startNextRound(output.score)
+        output.display()
+    }
 
     if (output.startTime === null) {
         output.startTime = Date.now()
@@ -183,8 +191,8 @@ process.stdin.on("keypress", (str, key) => {
 
     if (output.countCorrect() >= round.targetText.length) {
         console.log("\nDone!")
-        const score = output.showStatistics()
+        output.showStatistics()
         output.reset()
-        round.startNextRound(score)
+        output.isWaitingEnter = true
     }
 })

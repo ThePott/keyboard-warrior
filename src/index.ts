@@ -37,12 +37,16 @@ const round: Round = {
     targetScore: 80,
 
     startNextLevel: () => {
+        debugger
+        console.log("---- starting next level")
         round.level++
         round.startNextSubLevel(1)
     },
     startNextSubLevel: (target?: number) => {
+        debugger
         if (!round.isShuffled) {
             round.shuffle()
+            console.log
             return
         }
         round.subLevel = target ?? round.subLevel + 1
@@ -51,12 +55,15 @@ const round: Round = {
         round.failedCount = 0
     },
     shuffle: () => {
+        debugger
         const startIndex = round.level - round.subLevel
         const targetTextArray = wordBank.slice(startIndex, round.level).sort(() => 0.5 - Math.random())
         round.targetText = targetTextArray.join(" ")
+        console.log(round.targetText)
         round.isShuffled = true
     },
     startNextRound: (score: number) => {
+        debugger
         if (score > round.targetScore) {
             if (round.level === round.subLevel) {
                 round.startNextLevel()
@@ -156,9 +163,11 @@ const output: Output = {
         output.score = score
     },
     reset: () => {
+        debugger
         output.chalkStrArray = []
         output.totalKeyStroke = 0
         output.startTime = null
+        readline.cursorTo(process.stdout, 0, 0)
     },
 }
 

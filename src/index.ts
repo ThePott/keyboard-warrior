@@ -1,10 +1,98 @@
 import chalk from "chalk"
 import readline from "readline"
+import wordBank from "../data/index.js"
 
 readline.emitKeypressEvents(process.stdin)
 process.stdin.setRawMode(true)
 
 const word = "hello this is something that is long"
+
+// NOTE: 게임 규칙
+// NOTE: 새 레벨을 시작하면
+// 1. 그 단어만
+// 2. 성공하면 그 단어 + 1 - shuffle -> fixed
+// 3. 성공하면 위의 것을 shuffle
+// 4. 성공하면 그 단어 + 1 - shuffle -> fixed
+// 5. 성공하면 위의 것을 shuffle
+// ... 반복
+// 6. 레벨의 길이에 도달한 것을 성공하면 다음 레벨로 넘어감
+
+type Round = {
+    level: number // NOTE: starts from 1
+    subLevel: number // NOTE: starts from 1
+    isShuffled: boolean
+    failedCount: number // NOTE: count가 3이 되면 더 쉽게 만듦. 3 이전에 성공하면 더 어렵게 만듦
+    targetText: string // NOTE: 이걸 친다
+    targetScore: number // NOTE: 이것의 절반보다 낮으면 sub 시작
+
+    startNextLevel: () => void
+    startNextSubLevel: (target?: number) => void
+    shuffle: () => void
+    startNextRound: (score: number) => void
+}
+const status: Round = {
+    level: 0,
+    subLevel: 0,
+    isShuffled: false,
+    failedCount: 0,
+    targetText: "the",
+    targetScore: 80,
+
+    startNextLevel: () => {
+        status.level++
+        status.startNextSubLevel(1)
+    },
+    startNextSubLevel: (target?: number) => {
+        if (!status.isShuffled) {
+            status.shuffle()
+            return
+        }
+        status.subLevel = target ?? status.subLevel + 1
+        const startIndex = status.level - status.subLevel
+        status.targetText = wordBank.slice(startIndex, status.level).join(" ")
+        status.failedCount = 0
+    },
+    shuffle: () => {
+        const startIndex = status.level - status.subLevel
+        const targetTextArray = wordBank.slice(startIndex, status.level).sort(() => 0.5 - Math.random())
+        status.targetText = targetTextArray.join(" ")
+        status.isShuffled = true
+    },
+    startNextRound: (score: number) => {
+        if (score > status.targetScore) {
+            if (status.level === status.subLevel) {
+                status.startNextLevel()
+                return
+            }
+            if (status.isShuffled) {
+                status.startNextSubLevel()
+                return
+            }
+            status.shuffle()
+            return
+        }
+
+        status.failedCount++
+        if (score < status.targetScore / 2) {
+            if (status.isShuffled) {
+                status.isShuffled = false
+                status.failedCount = 0 // NOTE: 너무 못하면 이걸로 목표 변경
+                return
+            }
+        }
+
+        if (status.failedCount < 3) {
+            if (status.isShuffled) {
+                status.shuffle()
+                return
+            }
+            return
+        }
+
+        status.subLevel = status.subLevel > 1 ? status.subLevel - 1 : 1
+        status.isShuffled = false
+    },
+}
 
 type ChalkStr = {
     ansiText: string

@@ -1,11 +1,9 @@
 import chalk from "chalk"
 import readline from "readline"
-import wordBank from "../data/index.js"
+import wordBank from "./data/index.js"
 
 readline.emitKeypressEvents(process.stdin)
 process.stdin.setRawMode(true)
-
-const word = "hello this is something that is long"
 
 // NOTE: 게임 규칙
 // NOTE: 새 레벨을 시작하면
@@ -30,7 +28,7 @@ type Round = {
     shuffle: () => void
     startNextRound: (score: number) => void
 }
-const status: Round = {
+const round: Round = {
     level: 0,
     subLevel: 0,
     isShuffled: false,
@@ -39,58 +37,58 @@ const status: Round = {
     targetScore: 80,
 
     startNextLevel: () => {
-        status.level++
-        status.startNextSubLevel(1)
+        round.level++
+        round.startNextSubLevel(1)
     },
     startNextSubLevel: (target?: number) => {
-        if (!status.isShuffled) {
-            status.shuffle()
+        if (!round.isShuffled) {
+            round.shuffle()
             return
         }
-        status.subLevel = target ?? status.subLevel + 1
-        const startIndex = status.level - status.subLevel
-        status.targetText = wordBank.slice(startIndex, status.level).join(" ")
-        status.failedCount = 0
+        round.subLevel = target ?? round.subLevel + 1
+        const startIndex = round.level - round.subLevel
+        round.targetText = wordBank.slice(startIndex, round.level).join(" ")
+        round.failedCount = 0
     },
     shuffle: () => {
-        const startIndex = status.level - status.subLevel
-        const targetTextArray = wordBank.slice(startIndex, status.level).sort(() => 0.5 - Math.random())
-        status.targetText = targetTextArray.join(" ")
-        status.isShuffled = true
+        const startIndex = round.level - round.subLevel
+        const targetTextArray = wordBank.slice(startIndex, round.level).sort(() => 0.5 - Math.random())
+        round.targetText = targetTextArray.join(" ")
+        round.isShuffled = true
     },
     startNextRound: (score: number) => {
-        if (score > status.targetScore) {
-            if (status.level === status.subLevel) {
-                status.startNextLevel()
+        if (score > round.targetScore) {
+            if (round.level === round.subLevel) {
+                round.startNextLevel()
                 return
             }
-            if (status.isShuffled) {
-                status.startNextSubLevel()
+            if (round.isShuffled) {
+                round.startNextSubLevel()
                 return
             }
-            status.shuffle()
+            round.shuffle()
             return
         }
 
-        status.failedCount++
-        if (score < status.targetScore / 2) {
-            if (status.isShuffled) {
-                status.isShuffled = false
-                status.failedCount = 0 // NOTE: 너무 못하면 이걸로 목표 변경
+        round.failedCount++
+        if (score < round.targetScore / 2) {
+            if (round.isShuffled) {
+                round.isShuffled = false
+                round.failedCount = 0 // NOTE: 너무 못하면 이걸로 목표 변경
                 return
             }
         }
 
-        if (status.failedCount < 3) {
-            if (status.isShuffled) {
-                status.shuffle()
+        if (round.failedCount < 3) {
+            if (round.isShuffled) {
+                round.shuffle()
                 return
             }
             return
         }
 
-        status.subLevel = status.subLevel > 1 ? status.subLevel - 1 : 1
-        status.isShuffled = false
+        round.subLevel = round.subLevel > 1 ? round.subLevel - 1 : 1
+        round.isShuffled = false
     },
 }
 
@@ -109,7 +107,8 @@ type Output = {
     makeCleanOutput: () => string
     display: () => void
     countCorrect: () => number
-    showStatistics: () => void
+    showStatistics: () => number // NOTE: return score
+    reset: () => void
 }
 const output: Output = {
     chalkStrArray: [],
@@ -133,7 +132,7 @@ const output: Output = {
     makeCleanOutput: () => output.chalkStrArray.map(({ ansiText }) => ansiText).join(""),
     display: () => {
         console.clear() // NOTE: 매번 지우고 새로 그린다
-        console.log(output.makeCleanOutput() + chalk.gray(word.slice(output.chalkStrArray.length)))
+        console.log(output.makeCleanOutput() + chalk.gray(round.targetText.slice(output.chalkStrArray.length)))
         readline.cursorTo(process.stdout, output.chalkStrArray.length, 0)
     },
     countCorrect: () => output.chalkStrArray.filter(({ isCorrect }) => isCorrect).length,
@@ -149,6 +148,13 @@ const output: Output = {
         const accuracyForDisplay = Math.round(accuracy)
         const scoreForDisplay = Math.round(score)
         console.log({ timeForDisplay, wpmForDisplay, accuracyForDisplay, scoreForDisplay })
+
+        return score
+    },
+    reset: () => {
+        output.chalkStrArray = []
+        output.totalKeyStroke = 0
+        output.startTime = null
     },
 }
 
@@ -168,16 +174,17 @@ process.stdin.on("keypress", (str, key) => {
         return
     }
 
-    const expected = word[output.chalkStrArray.length]
+    const expected = round.targetText[output.chalkStrArray.length]
     if (str === expected) {
         output.typeCorrectly(str)
     } else {
         output.typeWrong(str)
     }
 
-    if (output.countCorrect() >= word.length) {
+    if (output.countCorrect() >= round.targetText.length) {
         console.log("\nDone!")
-        output.showStatistics()
-        process.exit()
+        const score = output.showStatistics()
+        output.reset()
+        round.startNextRound(score)
     }
 })

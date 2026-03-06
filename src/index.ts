@@ -4,7 +4,7 @@ import readline from "readline"
 readline.emitKeypressEvents(process.stdin)
 process.stdin.setRawMode(true)
 
-const word = "hello"
+const word = "hello this is something that is long"
 
 type ChalkStr = {
     ansiText: string
@@ -12,6 +12,8 @@ type ChalkStr = {
 }
 type Output = {
     chalkStrArray: ChalkStr[]
+    totalKeyStroke: number
+    startTime: number | null
 
     typeCorrectly: (str: string) => void
     typeWrong: (str: string) => void
@@ -19,9 +21,13 @@ type Output = {
     makeCleanOutput: () => string
     display: () => void
     countCorrect: () => number
+    showStatistics: () => void
 }
 const output: Output = {
     chalkStrArray: [],
+    totalKeyStroke: 0,
+    startTime: null,
+
     typeCorrectly: (str: string) => {
         const ansiText = chalk.green(str) // correct = green
         output.chalkStrArray.push({ ansiText, isCorrect: true })
@@ -43,13 +49,32 @@ const output: Output = {
         readline.cursorTo(process.stdout, output.chalkStrArray.length, 0)
     },
     countCorrect: () => output.chalkStrArray.filter(({ isCorrect }) => isCorrect).length,
+    showStatistics: () => {
+        if (!output.startTime) throw new Error("시작 시간이 설정되지 않았어요")
+        const time = Date.now() - output.startTime
+        const wpm = output.countCorrect() / 5 / (time / (1000 * 60))
+        const accuracy = output.countCorrect() / output.totalKeyStroke
+        const score = wpm ** accuracy
+
+        const timeForDisplay = Math.round(time / 1000)
+        const wpmForDisplay = Math.round(wpm)
+        const accuracyForDisplay = Math.round(accuracy)
+        const scoreForDisplay = Math.round(score)
+        console.log({ timeForDisplay, wpmForDisplay, accuracyForDisplay, scoreForDisplay })
+    },
 }
 
 output.display()
 
 process.stdin.on("keypress", (str, key) => {
     if (key.name === "escape") process.exit()
-    console.log({ name: key.name })
+
+    if (output.startTime === null) {
+        output.startTime = Date.now()
+    }
+
+    output.totalKeyStroke++
+
     if (key.name === "backspace") {
         output.backspace()
         return
@@ -64,6 +89,7 @@ process.stdin.on("keypress", (str, key) => {
 
     if (output.countCorrect() >= word.length) {
         console.log("\nDone!")
+        output.showStatistics()
         process.exit()
     }
 })

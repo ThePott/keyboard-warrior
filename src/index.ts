@@ -40,12 +40,12 @@ const output: Output = {
     display: () => {
         console.clear() // NOTE: 매번 지우고 새로 그린다
         console.log(output.makeCleanOutput() + chalk.gray(word.slice(output.chalkStrArray.length)))
+        readline.cursorTo(process.stdout, output.chalkStrArray.length, 0)
     },
     countCorrect: () => output.chalkStrArray.filter(({ isCorrect }) => isCorrect).length,
 }
 
-console.clear()
-console.log(chalk.gray(word))
+output.display()
 
 process.stdin.on("keypress", (str, key) => {
     if (key.name === "escape") process.exit()

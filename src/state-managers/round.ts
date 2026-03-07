@@ -30,9 +30,11 @@ const round: Round = {
     },
     handleRoundResult: (score: number) => {
         if (score > round.targetScore) {
+            // NOTE: 다음 라운드 시작
             round.startRound(1)
             return
         }
+        // NOTE: 지금 라운드 반복
         round.startRound(0)
     },
 }

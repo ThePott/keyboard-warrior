@@ -31,7 +31,7 @@ const screen: Screen = {
         screen.display()
     },
     typeWrong: (str: string) => {
-        const ansiText = chalk.red(str) // wrong = red
+        const ansiText = chalk.red(str === " " ? "·" : (str ?? ""))
         screen.chalkStrArray.push({ ansiText, isCorrect: false })
         screen.display()
     },

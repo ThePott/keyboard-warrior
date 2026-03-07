@@ -13,7 +13,8 @@
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
         "build": "tsc",
-        "dev": "tsx ./src/index.ts"
+        "dev": "tsx ./src/index.ts",
+        "debug": "tsx --inspect-brk --watch ./src/index.ts"
     },
     "keywords": [],
     "author": "",

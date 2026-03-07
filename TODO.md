@@ -1,1 +1,2 @@
-- [ ] package.json에 디버거 세팅하기
+- [x] package.json에 디버거 세팅하기
+- [ ] above, below 에서 각각 display가 호출됨 <- 확인하기

@@ -19,8 +19,13 @@ screen.display()
 let score: number = 0
 process.stdin.on("keypress", (str, key) => {
     if (key.name === "escape") process.exit()
+
     if (key.name === "return") {
-        round.handleRoundResult(score)
+        if (screen.countCorrect() >= round.targetText.length) {
+            round.handleRoundResult(score)
+            return
+        }
+        round.handleRoundResult(round.targetScore / 2 + 1)
         return
     }
 

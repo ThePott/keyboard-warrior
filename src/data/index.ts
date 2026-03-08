@@ -18,7 +18,6 @@ const wordBank: string[] = [
     "with",
     "his",
     "they",
-    "I",
     "at",
     "be",
     "this",

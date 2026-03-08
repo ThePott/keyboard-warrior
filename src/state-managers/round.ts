@@ -4,7 +4,7 @@ import screen from "./screen.js"
 // TODO: 단순화하자. sublevel, shuffle 없애고 level 올라갈 때마다 endIndex 올리자
 // TODO: 통계를 이용하는 건 round 이니까 round에서 통계 관련 속성을 가지고 있는 게 자연스럽겠다
 type StartRoundProps = {
-    startIndex: number
+    length: number
     endIndexDiff: number
 }
 type Round = {
@@ -13,20 +13,21 @@ type Round = {
     targetText: string // NOTE: 이걸 친다
     targetScore: number // NOTE: 이것의 절반보다 낮으면 sub 시작
 
-    startRound: ({ startIndex, endIndexDiff }: StartRoundProps) => void
+    startRound: ({ length, endIndexDiff }: StartRoundProps) => void
     handleRoundResult: (score: number) => void
 }
 const round: Round = {
     endIndex: 1,
     startIndex: 0,
     targetText: wordBank[0] ?? "the",
-    targetScore: 80,
+    targetScore: 60,
 
-    startRound: ({ startIndex, endIndexDiff }: StartRoundProps) => {
+    startRound: ({ length, endIndexDiff }: StartRoundProps) => {
         screen.startTime = Date.now()
         round.endIndex += endIndexDiff
 
-        round.startIndex = startIndex < round.endIndex ? startIndex : round.endIndex - 1
+        const startIndex = round.endIndex - length
+        round.startIndex = startIndex <= 0 ? 0 : startIndex
         round.targetText = wordBank
             .slice(round.startIndex, round.endIndex)
             .sort(() => -1)
@@ -35,25 +36,26 @@ const round: Round = {
         screen.display()
     },
     handleRoundResult: (score: number) => {
+        const length = round.endIndex - round.startIndex
         if (score > round.targetScore) {
             // NOTE: 다 잘했으면 다음으로
             if (round.startIndex <= 0) {
-                round.startRound({ startIndex: 0, endIndexDiff: 1 })
+                round.startRound({ length: 1, endIndexDiff: 1 })
                 return
             }
             // NOTE: 복습 잘했으면 복습 단어 추가
-            round.startRound({ startIndex: round.startIndex - 1, endIndexDiff: 0 })
+            round.startRound({ length: length + 1, endIndexDiff: 0 })
             return
         }
 
         // NOTE: 아주 못하면 개수 하나 줄여 재시도
         if (score < round.targetScore / 2) {
-            round.startRound({ startIndex: round.startIndex + 1, endIndexDiff: 0 })
+            round.startRound({ length: length - 1, endIndexDiff: 0 })
             return
         }
 
         // NOTE: 적당히 못하면 반복
-        round.startRound({ startIndex: round.startIndex, endIndexDiff: 0 })
+        round.startRound({ length, endIndexDiff: 0 })
     },
 }
 

@@ -27,7 +27,7 @@ const round: Round = {
         round.endIndex += endIndexDiff
 
         const startIndex = round.endIndex - length
-        round.startIndex = startIndex <= 0 ? 0 : startIndex
+        round.startIndex = Math.min(Math.max(0, startIndex), round.endIndex - 1)
         round.targetText = wordBank
             .slice(round.startIndex, round.endIndex)
             .sort(() => -1)
